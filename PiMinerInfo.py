@@ -29,7 +29,7 @@ class PiMinerInfo:
 	dollars 	= ['USD', 'AUD', 'CAD']	#currencies with displayable symbols
 	lastCheck 	= time.time()			#time of last price check
 	priceWait 	= 60.0					#interval between price checks
-	priceLast	= '-'					#last price via mtgox
+	priceLast	= '-'					#last price via blockchain
 	priceLo 	= '-'					#low price
 	priceHi 	= '-'					#high price
 
@@ -195,7 +195,7 @@ class PiMinerInfo:
 
 	def checkPrice(self):
 		try:
-			url = 'https://data.mtgox.com/api/2/BTC***/money/ticker'.replace('***', self.currency)
+			url = 'http://blockchain.info/ticker'
 			f = urllib.urlopen(url)
 		except Exception as e:
 			self.reportError(e)
@@ -203,23 +203,14 @@ class PiMinerInfo:
 		data = None
 		if f:
 			pricesData = f.read()
-			prices_json = json.loads(pricesData)
-			if prices_json and prices_json['result'] == 'success':
-				data = prices_json['data']
+			data = json.loads(pricesData)
 		
 		#dollar symbol currencies
-		if self.currency in self.dollars:
-			self.priceLast = data['last']['display_short'] if data else '-'
-			self.priceLo = data['low']['display_short'] if data else '-'
-			a, self.priceLo = self.priceLo.split('$')
-			self.priceHi = data['high']['display_short'] if data else '-'
-			a, self.priceHi = self.priceHi.split('$')
-		
-		#non-compatible symbol currencies
-		else:
-			self.priceLast = ('%.2f ' % float(data['last']['value']) if data else '-') + self.currency
-			self.priceLo = '%.2f' % float(data['low']['value']) if data else '-'
-			self.priceHi = '%.2f' % float(data['high']['value']) if data else '-'
+		self.priceLast = str(data[self.currency]['last']) if data else '-'
+		self.priceLo = str(data[self.currency]['buy']) if data else '-'
+		#a, self.priceLo = self.priceLo.split('$')
+		self.priceHi = str(data[self.currency]['sell']) if data else '-'
+		#a, self.priceHi = self.priceHi.split('$')
 	
 	def refresh(self):
 		
